@@ -24,17 +24,27 @@ public class EvertaleUser {
 	}
 
 	public EvertaleAPI.LoginData? Relog()
-	=> EvertaleAPI.CreateSession(UserID, CLID!, Language, Region, Shard!.Value, Device!, OS!);
+		=> EvertaleAPI.CreateSession(UserID, CLID!, Language, Region, Shard!.Value, Device!, OS!);
 
 	public static EvertaleUser? RegisterNew(string Device, string OS, int Shard, string Language, string Region, EvertaleAPI.ProfileData? Data) {
 		EvertaleAPI.NewAccountData? NAD = EvertaleAPI.RegisterAccount(Device, OS, Shard, Language, Region);
 		if (NAD == null)
 			return null;
-		EvertaleAPI.LoginData? LD = EvertaleAPI.CreateSession(NAD.UID, NAD.CLID, Device, OS, Shard, Language, Region);
+		EvertaleAPI.LoginData? LD = EvertaleAPI.CreateSession(NAD.UID, NAD.CLID, Language, Region, Shard, Device, OS);
 		if (LD == null)
 			return null;
 		if (Data.HasValue)
 			EvertaleAPI.UpdateAccountSettings(LD.SessionID, Data.Value);
 		return new EvertaleUser(NAD.UID, NAD.CLID, LD.SessionID, Device, OS, Shard, Language, Region, NAD.RCode);
+	}
+
+	public static EvertaleUser? LoginWithRestoreCode(string RestoreCode, string Device, string OS, int Shard, string Language, string Region) {
+		EvertaleAPI.RestoreData? RD = EvertaleAPI.RestoreAccount(RestoreCode, Language, Region);
+		if (RD == null)
+			return null;
+		EvertaleAPI.LoginData? LD = EvertaleAPI.CreateSession(RD.UID, RD.CLID, Language, Region, Shard, Device, OS);
+		if (LD == null)
+			return null;
+		return new EvertaleUser(RD.UID, RD.CLID, LD.SessionID, Device, OS, Shard, Language, Region, RestoreCode);
 	}
 }

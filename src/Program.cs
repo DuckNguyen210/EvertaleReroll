@@ -34,14 +34,78 @@ public static class Program {
 	public static void Main(string[] Args) {
 		Console.WriteLine("Evertale Ponoser V2 by Alluseri");
 		Console.WriteLine("~Поносим Evertale по L7~");
-		switch (Args.Length == 0 ? "help" : Args[0].ToLower()) {
+		switch (Args.Length == 0 ? "help" : Args[0].ToLowerInvariant()) {
 			default:
+			Console.WriteLine($"Unknown subcommand: {Args[0]}");
+			Console.WriteLine("Run with 'help' to list all available subcommands.");
+			break;
+			case "help":
 			Console.WriteLine("Available subcommands:");
+			Console.WriteLine("help - Displays this list of subcommands.");
 			Console.WriteLine("reroll - Creates and rerolls a new account in interactive mode.");
+			Console.WriteLine("restore [rcode] - Logs into an existing account using a restore code.");
 			Console.WriteLine("arena [sessid] [enemy id] - Fights an enemy in the arena. Ignores rank checks.");
-			Console.WriteLine("test-api - Tests if you can access the API and the API calls are up-to-date.");
-			Console.WriteLine("advertise [restorecode] - Advertises this project in local and cross-world chat.");
-			Console.WriteLine("advertise-leak [restorecode] - Advertises this project in local and cross-world chat and leaks restore code.");
+			Console.WriteLine("test-api - Tests the API connectivity.");
+			break;
+			case "restore": {
+				if (Args.Length > 1) {
+					string RestoreCode = Args[1];
+					string Devn = Args.Length > 2 ? Args[2] : "Genuine Lunahook Branded Phone";
+					string Osn = Args.Length > 3 ? Args[3] : "Android OS 11 / API-30 (RP1A.200720.012/A225FXXU2AUH1)";
+					int Shard = 1;
+					if (Args.Length > 4 && !int.TryParse(Args[4], out Shard)) {
+						Console.WriteLine("Shard must be a valid integer.");
+						return;
+					}
+					string Alp2 = Args.Length > 5 ? Args[5] : "jp";
+					string RestoreRegion = Args.Length > 6 ? Args[6] : "JST";
+					EvertaleUser? User = EvertaleUser.LoginWithRestoreCode(RestoreCode, Devn, Osn, Shard, Alp2, RestoreRegion);
+					if (User == null) {
+						Console.WriteLine("Could not log in with the provided restore code.");
+						return;
+					}
+					Console.WriteLine("Successfully restored account.");
+					Console.WriteLine("User ID: " + User.UserID);
+					Console.WriteLine("Session ID: " + User.SessionID);
+					return;
+				}
+				Console.WriteLine("Interactive restore mode. Fields not marked with * may be left empty.");
+				Console.Write("Please enter your restore code: ");
+				string Code = Console.ReadLine()!;
+				if (string.IsNullOrEmpty(Code)) {
+					Console.WriteLine("Restore code cannot be empty.");
+					return;
+				}
+				Console.Write("Please enter the device name: ");
+				string Dev = Console.ReadLine()!;
+				if (string.IsNullOrEmpty(Dev))
+					Dev = "Genuine Lunahook Branded Phone";
+				Console.Write("Please enter the OS: ");
+				string Os = Console.ReadLine()!;
+				if (string.IsNullOrEmpty(Os))
+					Os = "Android OS 11 / API-30 (RP1A.200720.012/A225FXXU2AUH1)";
+				Console.Write("Please enter the shard*: ");
+				if (!int.TryParse(Console.ReadLine(), out int Sh)) {
+					Console.WriteLine("Shard must be a valid integer.");
+					return;
+				}
+				Console.Write("Please enter the Alpha-2 language: ");
+				string Alp = Console.ReadLine()!;
+				if (string.IsNullOrEmpty(Alp))
+					Alp = "jp";
+				Console.Write("Please enter the region timezone(e.g. JST): ");
+				string Rtz = Console.ReadLine()!;
+				if (string.IsNullOrEmpty(Rtz))
+					Rtz = "JST";
+				EvertaleUser? RestoredUser = EvertaleUser.LoginWithRestoreCode(Code, Dev, Os, Sh, Alp, Rtz);
+				if (RestoredUser == null) {
+					Console.WriteLine("Could not log in with the provided restore code.");
+					return;
+				}
+				Console.WriteLine("Successfully restored account.");
+				Console.WriteLine("User ID: " + RestoredUser.UserID);
+				Console.WriteLine("Session ID: " + RestoredUser.SessionID);
+			}
 			break;
 			case "reroll": {
 				Console.WriteLine("Interactive mode. Fields not marked with * may be left empty.");
@@ -54,7 +118,10 @@ public static class Program {
 				if (string.IsNullOrEmpty(Osn))
 					Osn = "Android OS 11 / API-30 (RP1A.200720.012/A225FXXU2AUH1)";
 				Console.Write("Please enter the shard*: ");
-				int Shard = int.Parse(Console.ReadLine()!);
+				if (!int.TryParse(Console.ReadLine(), out int Shard)) {
+					Console.WriteLine("Shard must be a valid integer.");
+					return;
+				}
 				Console.Write("Please enter the Alpha-2 language: ");
 				string Alp2 = Console.ReadLine()!;
 				if (string.IsNullOrEmpty(Alp2))
@@ -70,6 +137,10 @@ public static class Program {
 			}
 			break;
 			case "arena":
+			if (Args.Length < 3) {
+				Console.WriteLine("Usage: arena [sessid] [enemy id]");
+				return;
+			}
 			Console.WriteLine("Trying to fight on SESSID " + Args[1] + " against " + Args[2]);
 			bool? V = EvertaleAPI.ArenaFight(Args[1], Args[2]);
 			Console.WriteLine("Result: " + (V == null ? "Blocked by server" : V.Value ? "Victory!" : "Loss!"));
@@ -106,88 +177,6 @@ public static class Program {
 					return;
 				}
 				Console.WriteLine("API Test successful!");
-			}
-			break;
-			case "advertise": {
-				EvertaleAPI.RestoreData? Rdt = EvertaleAPI.RestoreAccount(Args[1], "jp", "JST");
-				if (Rdt == null) {
-					Console.WriteLine("Failed to restore account to advertise.");
-					return;
-				}
-				EvertaleAPI.LoginData? Ld = EvertaleAPI.CreateSession(Rdt.UID, Rdt.CLID, "jp", "JST", 1, "Catgirls", "NekoOS");
-				if (Ld == null) {
-					Console.WriteLine($"Failed to create session to advertise: {Rdt.UID}, {Rdt.CLID}");
-					return;
-				}
-				EvertaleUser Evt = new(Rdt.UID, Rdt.CLID, Ld.SessionID, "Catgirls", "NekoOS", 1, "jp", "JST");
-				Console.WriteLine("Advertise session created.");
-				EvertaleChat Ec;
-				try {
-					Ec = new(Evt);
-				} catch {
-					Console.WriteLine("Failed to connect to chat.");
-					throw;
-				}
-				if (Ec.Send("lunahook.dev on top! Free rerolls for everyone! " + Random.Shared.Next(9999))) {
-					Thread.Sleep(500);
-				} else {
-					Console.WriteLine("Failed to send local message.");
-					return;
-				}
-				if (Ec.Swap(true)) {
-					Thread.Sleep(500);
-				} else {
-					Console.WriteLine("Failed to swap to global.");
-					return;
-				}
-				if (Ec.Send("lunahook.dev on top! Free rerolls for everyone! " + Random.Shared.Next(9999))) {
-					Thread.Sleep(500);
-				} else {
-					Console.WriteLine("Failed to send global message.");
-					return;
-				}
-				Console.WriteLine("Successfully advertised!");
-			}
-			break;
-			case "advertise-leak": {
-				EvertaleAPI.RestoreData? Rdt = EvertaleAPI.RestoreAccount(Args[1], "jp", "JST");
-				if (Rdt == null) {
-					Console.WriteLine("Failed to restore account to advertise.");
-					return;
-				}
-				EvertaleAPI.LoginData? Ld = EvertaleAPI.CreateSession(Rdt.UID, Rdt.CLID, "jp", "JST", 1, "Catgirls", "NekoOS");
-				if (Ld == null) {
-					Console.WriteLine($"Failed to create session to advertise: {Rdt.UID}, {Rdt.CLID}");
-					return;
-				}
-				EvertaleUser Evt = new(Rdt.UID, Rdt.CLID, Ld.SessionID, "Catgirls", "NekoOS", 1, "jp", "JST");
-				Console.WriteLine("Advertise session created.");
-				EvertaleChat Ec;
-				try {
-					Ec = new(Evt);
-				} catch {
-					Console.WriteLine("Failed to connect to chat.");
-					throw;
-				}
-				if (Ec.Send("X" + Random.Shared.Next(9999) + "X lunahook.dev on top! Free rerolls for everyone! This account restore code is " + Args[1])) {
-					Thread.Sleep(500);
-				} else {
-					Console.WriteLine("Failed to send local message.");
-					return;
-				}
-				if (Ec.Swap(true)) {
-					Thread.Sleep(500);
-				} else {
-					Console.WriteLine("Failed to swap to global.");
-					return;
-				}
-				if (Ec.Send("X" + Random.Shared.Next(9999) + "X lunahook.dev on top! Free rerolls for everyone! This account restore code is " + Args[1])) {
-					Thread.Sleep(500);
-				} else {
-					Console.WriteLine("Failed to send global message.");
-					return;
-				}
-				Console.WriteLine("Successfully advertised!");
 			}
 			break;
 		}

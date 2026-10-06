@@ -10,9 +10,9 @@ using System.Text;
 namespace Alluseri.EvertalePonoserV2.API;
 
 public static class EvertaleAPI {
-	public const string EvertaleVersion = "2.0.83"; // HAHAHA THIS HASNT EVEN CHANGED SINCE I LAST OPENED THIS FILE
-	public const string UserAgent = "UnityPlayer/2021.3.10f1 (UnityWebRequest/1.0, libcurl/7.80.0-DEV)";
-	public const string UnityVersion = "2021.3.10f1";
+	public const string EvertaleVersion = "2.0.105";
+	public const string UserAgent = "UnityPlayer/2022.3.62f3 (UnityWebRequest/1.0, libcurl/7.80.0-DEV)";
+	public const string UnityVersion = "2022.3.62f3";
 
 	public static NewAccountData? RegisterAccount(string Device, string OS, int Shard, string Language, string Region) {
 		try {
