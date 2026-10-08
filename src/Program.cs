@@ -32,7 +32,7 @@ public static class Program {
 	}
 
 	public static void Main(string[] Args) {
-		Console.WriteLine("Evertale Ponoser V2 by Alluseri");
+		Console.WriteLine("Evertale Assistant");
 		Console.WriteLine("~Поносим Evertale по L7~");
 		switch (Args.Length == 0 ? "help" : Args[0].ToLowerInvariant()) {
 			default:
@@ -43,70 +43,58 @@ public static class Program {
 			Console.WriteLine("Available subcommands:");
 			Console.WriteLine("help - Displays this list of subcommands.");
 			Console.WriteLine("reroll - Creates and rerolls a new account in interactive mode.");
-			Console.WriteLine("restore [rcode] - Logs into an existing account using a restore code.");
+			Console.WriteLine("restore [rcode] [device] [os] [shard] [lang] [region] - Logs into an existing account using a restore code; prompts for omitted values.");
+			Console.WriteLine("daily [rcode] [device] [os] [shard] [lang] [region] - Logs in and runs the daily routine.");
 			Console.WriteLine("arena [sessid] [enemy id] - Fights an enemy in the arena. Ignores rank checks.");
 			Console.WriteLine("test-api - Tests the API connectivity.");
 			break;
 			case "restore": {
-				if (Args.Length > 1) {
-					string RestoreCode = Args[1];
-					string Devn = Args.Length > 2 ? Args[2] : "Genuine Lunahook Branded Phone";
-					string Osn = Args.Length > 3 ? Args[3] : "Android OS 11 / API-30 (RP1A.200720.012/A225FXXU2AUH1)";
-					int Shard = 1;
-					if (Args.Length > 4 && !int.TryParse(Args[4], out Shard)) {
-						Console.WriteLine("Shard must be a valid integer.");
-						return;
-					}
-					string Alp2 = Args.Length > 5 ? Args[5] : "jp";
-					string RestoreRegion = Args.Length > 6 ? Args[6] : "JST";
-					EvertaleUser? User = EvertaleUser.LoginWithRestoreCode(RestoreCode, Devn, Osn, Shard, Alp2, RestoreRegion);
-					if (User == null) {
-						Console.WriteLine("Could not log in with the provided restore code.");
-						return;
-					}
-					Console.WriteLine("Successfully restored account.");
-					Console.WriteLine("User ID: " + User.UserID);
-					Console.WriteLine("Session ID: " + User.SessionID);
-					return;
+				string ReadValue(int ArgumentIndex, string Prompt) {
+					if (Args.Length > ArgumentIndex)
+						return Args[ArgumentIndex];
+					Console.Write(Prompt);
+					return Console.ReadLine() ?? "";
 				}
-				Console.WriteLine("Interactive restore mode. Fields not marked with * may be left empty.");
-				Console.Write("Please enter your restore code: ");
-				string Code = Console.ReadLine()!;
-				if (string.IsNullOrEmpty(Code)) {
-					Console.WriteLine("Restore code cannot be empty.");
-					return;
-				}
-				Console.Write("Please enter the device name: ");
-				string Dev = Console.ReadLine()!;
-				if (string.IsNullOrEmpty(Dev))
+
+				string Code = ReadValue(1, "Please enter your restore code: ").Trim();
+				string Dev = ReadValue(2, "Please enter the device name: ");
+				if (string.IsNullOrWhiteSpace(Dev))
 					Dev = "Genuine Lunahook Branded Phone";
-				Console.Write("Please enter the OS: ");
-				string Os = Console.ReadLine()!;
-				if (string.IsNullOrEmpty(Os))
+				string Os = ReadValue(3, "Please enter the OS: ");
+				if (string.IsNullOrWhiteSpace(Os))
 					Os = "Android OS 11 / API-30 (RP1A.200720.012/A225FXXU2AUH1)";
-				Console.Write("Please enter the shard*: ");
-				if (!int.TryParse(Console.ReadLine(), out int Sh)) {
+				string ShardInput = ReadValue(4, "Please enter the shard*: ");
+				if (!int.TryParse(ShardInput, out int Sh)) {
 					Console.WriteLine("Shard must be a valid integer.");
 					return;
 				}
-				Console.Write("Please enter the Alpha-2 language: ");
-				string Alp = Console.ReadLine()!;
-				if (string.IsNullOrEmpty(Alp))
+				string Alp = ReadValue(5, "Please enter the Alpha-2 language: ");
+				if (string.IsNullOrWhiteSpace(Alp))
 					Alp = "jp";
-				Console.Write("Please enter the region timezone(e.g. JST): ");
-				string Rtz = Console.ReadLine()!;
-				if (string.IsNullOrEmpty(Rtz))
+				string Rtz = ReadValue(6, "Please enter the region timezone(e.g. JST): ");
+				if (string.IsNullOrWhiteSpace(Rtz))
 					Rtz = "JST";
-				EvertaleUser? RestoredUser = EvertaleUser.LoginWithRestoreCode(Code, Dev, Os, Sh, Alp, Rtz);
-				if (RestoredUser == null) {
-					Console.WriteLine("Could not log in with the provided restore code.");
+
+				if (string.IsNullOrWhiteSpace(Code)) {
+					Console.WriteLine("Restore code cannot be empty.");
 					return;
 				}
+				EvertaleUser? RestoredUser = EvertaleUser.LoginWithRestoreCode(Code, Dev, Os, Sh, Alp, Rtz);
+				if (RestoredUser == null)
+					return;
 				Console.WriteLine("Successfully restored account.");
 				Console.WriteLine("User ID: " + RestoredUser.UserID);
 				Console.WriteLine("Session ID: " + RestoredUser.SessionID);
+				Console.WriteLine("Language: " + RestoredUser.Language);
+				Console.WriteLine("Region: " + RestoredUser.Region);
+				Console.WriteLine("Shard: " + (RestoredUser.Shard?.ToString() ?? "N/A"));
+				Console.WriteLine("CLID: " + (RestoredUser.CLID ?? "N/A"));
+				Console.WriteLine("Device: " + (RestoredUser.Device ?? "N/A"));
+				Console.WriteLine("OS: " + (RestoredUser.OS ?? "N/A"));
+				Console.WriteLine("Restore code: " + (RestoredUser.RCode ?? "N/A"));
 			}
 			break;
+			
 			case "reroll": {
 				Console.WriteLine("Interactive mode. Fields not marked with * may be left empty.");
 				Console.Write("Please enter the device name: ");
@@ -134,6 +122,30 @@ public static class Program {
 				string Nick = Console.ReadLine()!;
 				Console.WriteLine("Bravo 6, going dark.");
 				Reroll(Devn, Osn, Shard, Alp2, Rtz, string.IsNullOrEmpty(Nick) ? null : new EvertaleAPI.ProfileData(Nick));
+			}
+			break;
+			case "daily": {
+				if (Args.Length < 2) {
+					Console.WriteLine("Usage: daily [rcode] [device] [os] [shard] [lang] [region]");
+					return;
+				}
+				string Devn = Args.Length > 2 ? Args[2] : "Genuine Lunahook Branded Phone";
+				string Osn = Args.Length > 3 ? Args[3] : "Android OS 11 / API-30 (RP1A.200720.012/A225FXXU2AUH1)";
+				int Shard = 1;
+				if (Args.Length > 4 && !int.TryParse(Args[4], out Shard)) {
+					Console.WriteLine("Shard must be a valid integer.");
+					return;
+				}
+				string Alp2 = Args.Length > 5 ? Args[5] : "jp";
+				string RestoreRegion = Args.Length > 6 ? Args[6] : "JST";
+				EvertaleUser? User = EvertaleUser.LoginWithRestoreCode(Args[1], Devn, Osn, Shard, Alp2, RestoreRegion);
+				if (User == null) {
+					Console.WriteLine("Daily routine was not started because login failed. Check the restore code and login settings, especially the shard.");
+					return;
+				}
+				Console.WriteLine("Successfully logged in. Starting daily routine...");
+				Daily DailyRoutine = new(User.SessionID, true, true);
+				DailyRoutine.Run();
 			}
 			break;
 			case "arena":

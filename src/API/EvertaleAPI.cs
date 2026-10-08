@@ -211,6 +211,48 @@ public static class EvertaleAPI {
 		}
 	}
 
+	public static void ConquestExplore(string SessionID) {
+		try {
+			Http.NoPost("https://apialt.prd.evertaleserver.com/conquest", new FormUrlEncodedContent(new Dictionary<string, string?>() {
+				["explore"] = "1",
+				["sesid"] = SessionID,
+				["requnique"] = "1",
+				["reqid"] = "1",
+				["req"] = "conquest"
+			}), new[] {
+				("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8"),
+				("User-Agent", UserAgent),
+				("X-Unity-Version", UnityVersion),
+				("evertale", SessionID)
+			});
+		} catch (Exception e) {
+			Console.WriteLine(e);
+			return;
+		}
+	}
+
+	public static void ConquestFastForward(string SessionID) {
+		foreach (string Hours in new[] { "2", "5" }) {
+			try {
+				Http.NoPost("https://apialt.prd.evertaleserver.com/conquest", new FormUrlEncodedContent(new Dictionary<string, string?>() {
+					["fastforward"] = Hours,
+					["sesid"] = SessionID,
+					["requnique"] = "1",
+					["reqid"] = "1",
+					["req"] = "conquest"
+				}), new[] {
+					("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8"),
+					("User-Agent", UserAgent),
+					("X-Unity-Version", UnityVersion),
+					("evertale", SessionID)
+				});
+			} catch (Exception e) {
+				Console.WriteLine(e);
+				return;
+			}
+		}
+	}
+
 	public static void ConquestChestClaim(string SessionID) {
 		try {
 			Http.NoPost("https://apialt.prd.evertaleserver.com/conquest", new FormUrlEncodedContent(new Dictionary<string, string?>() {

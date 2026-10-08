@@ -25,7 +25,6 @@ public class Daily {
 		ClaimAllianceShards();
 		ClaimTowerChest();
 		TowerFastForward();
-		TowerFastForward();
 		TowerFight();
 		TowerExplore();
 		if (ArenaAvailable)
@@ -62,13 +61,13 @@ public class Daily {
 		bool? V = EvertaleAPI.ArenaFight(SessionID, PlayerId);
 		Console.WriteLine(V == null ? $"Couldn't determine victory against {PlayerId}, request failed?" : $"Arena fight vs {PlayerId}: {(V.Value ? "Victory!" : "Loss!")}");
 
-		Thread.Sleep(6601); // Evertale moment
+		Thread.Sleep(12000);
 
 		return V.HasValue && V.Value ? PlayerId : null;
 	}
 
 	public void TowerExplore() {
-		Console.WriteLine("Stub for tower exploration: unavailable due to level rq.");
+		EvertaleAPI.ConquestExplore(SessionID);
 	}
 
 	public void TowerFight() {
@@ -80,7 +79,7 @@ public class Daily {
 	}
 
 	public void TowerFastForward() {
-		Console.WriteLine("Stub for tower fast forward: unavailable due to level rq.");
+		EvertaleAPI.ConquestFastForward(SessionID);
 	}
 
 	public void ClaimHighActivity() {
@@ -114,12 +113,11 @@ public class Daily {
 	}
 
 	public void ClaimAllianceShards() {
-		if (AllianceAvailable) {
-			Console.WriteLine("Stub for claim alliance shards: unresearched.");
-			// Check if new portion of ss is available
+		if (!AllianceAvailable)
+			return;
 
-			// Claim it!
-		}
+		EvertaleAPI.GuildLogin(SessionID);
+		Console.WriteLine("Requested the daily alliance reward.");
 	}
 
 	public void ClaimLifetimeQuests() {

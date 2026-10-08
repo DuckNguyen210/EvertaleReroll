@@ -62,7 +62,7 @@ public class DailyNuisanceScenario {
 		bool? V = EvertaleAPI.ArenaFight(SessionID, PlayerId);
 		Console.WriteLine(V == null ? $"Couldn't determine victory against {PlayerId}, request failed?" : $"Arena fight vs {PlayerId}: {(V.Value ? "Victory!" : "Loss!")}");
 
-		Thread.Sleep(6601); // Evertale moment
+		Thread.Sleep(12000);
 
 		return V.HasValue && V.Value ? PlayerId : null;
 	}
